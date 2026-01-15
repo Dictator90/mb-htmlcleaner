@@ -1,7 +1,6 @@
 {
-  "name": "mb/htmlcleaner",
+  "name": "mb4it/htmlcleaner",
   "description": "Modern HTML cleaner with selectors and fluent API",
-  "minimum-stability": "stable",
   "license": "MIT",
   "type": "library",
   "keywords": [
