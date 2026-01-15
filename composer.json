@@ -1,0 +1,35 @@
+{
+  "name": "mb/htmlcleaner",
+  "description": "Modern HTML cleaner with selectors and fluent API",
+  "minimum-stability": "stable",
+  "license": "MIT",
+  "type": "library",
+  "keywords": [
+    "html",
+    "clean",
+    "proccess"
+  ],
+  "authors": [
+    {
+      "name": "Maxim Bezvodinskikh",
+      "email": "m.bezvodinskikh@gmail.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "MB\\Support\\HtmlCleaner\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "MB\\Support\\HtmlCleaner\\Tests\\": "tests/"
+    }
+  },
+  "require": {
+    "php": ">=8.1",
+    "ext-dom": "*"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^10.0"
+  }
+}
