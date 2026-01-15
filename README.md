@@ -9,7 +9,7 @@ MB HTML Cleaner is a powerful PHP package for cleaning and transforming HTML con
 Install the package via Composer:
 
 ```bash
-composer require mb/htmlcleaner
+composer require mb4it/htmlcleaner
 ```
 
 ## Basic Usage

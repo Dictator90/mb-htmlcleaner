@@ -7,7 +7,7 @@ HTML Cleaner - это мощный PHP-пакет для очистки и тр�
 Установите пакет через Composer:
 
 ```bash
-composer require mb/htmlcleaner
+composer require mb4it/htmlcleaner
 ```
 
 ## Базовое использование
