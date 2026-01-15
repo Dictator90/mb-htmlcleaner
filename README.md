@@ -1,85 +1,179 @@
 # MB HTML Cleaner
 
-HTML Cleaner - это мощный PHP-пакет для очистки и трансформации HTML-кода. Он позволяет легко манипулировать HTML-структурами, удалять нежелательные элементы и атрибуты, нормализовывать содержимое и выполнять другие операции по очистке.
+[Русская документация](README.ru.md)
 
-## Установка
+MB HTML Cleaner is a powerful PHP package for cleaning and transforming HTML content. It provides a fluent interface for manipulating HTML structures, removing unwanted elements and attributes, normalizing content, and performing various HTML transformations.
 
-Установите пакет через Composer:
+## Installation
+
+Install the package via Composer:
 
 ```bash
 composer require mb/htmlcleaner
 ```
 
-## Базовое использование
+## Basic Usage
 
 ```php
 use MB\Support\HtmlCleaner\HtmlCleaner;
 
 $cleaner = new HtmlCleaner();
-$result = $cleaner->clean('<p><b>Привет</b> <i>мир</i>!</p>');
+$result = $cleaner->clean('<p><b>Hello</b> <i>world</i>!</p>');
 ```
 
-## Основные функции
+## HtmlCleaner Methods
 
-### Удаление элементов
+### transform()
 
-Удалите указанные HTML-теги с помощью метода `drop()`:
-
-```php
-$result = $cleaner
-    ->drop('script', 'style', 'meta')
-    ->clean($html);
-```
-
-### Извлечение содержимого (Unwrap)
-
-Извлеките содержимое из указанных элементов, удалив сами теги:
-
-```php
-$result = $cleaner
-    ->unwrap('p', 'div')
-    ->clean($html);
-```
-
-### Замена элементов
-
-Замените одни элементы на другие с сохранением атрибутов:
+Transform elements selected by the provided selectors using a TransformerInterface or closure.
 
 ```php
 use MB\Support\HtmlCleaner\Selector\SelectorFacade;
 use MB\Support\HtmlCleaner\Transformer\Replace;
 
 $result = $cleaner
-    ->replace(
+    ->transform(
         SelectorFacade::tag('span'),
-        Replace::tag('b')->copyClassList()
+        Replace::tag('b')
     )
     ->clean($html);
 ```
 
-### Удаление атрибутов
+### transformAnd()
 
-Удалите указанные атрибуты из всех элементов:
+Apply transformation when all specified selectors match (logical AND).
 
 ```php
+use MB\Support\HtmlCleaner\Selector\SelectorFacade;
+
 $result = $cleaner
-    ->stripAttributes('style', 'class')
+    ->transformAnd([
+        SelectorFacade::tag('span'),
+        SelectorFacade::style('font-weight', 'bold')
+    ], new Replace('strong'))
     ->clean($html);
 ```
 
-### Разрешение определенных стилей
+### transformOr()
 
-Разрешите использование определенных CSS-свойств в атрибуте style:
+Apply transformation when any of the specified selectors match (logical OR).
 
 ```php
 $result = $cleaner
-    ->allowStyles('color', 'background-color', 'font-size')
+    ->transformOr([
+        SelectorFacade::tag('b'),
+        SelectorFacade::tag('strong')
+    ], new Replace('strong'))
     ->clean($html);
 ```
 
-### Нормализация пробелов
+### onlyText()
 
-Нормализуйте пробелы и переносы строк в текстовом содержимом:
+Keep only text content of specified tags, removing all child elements.
+
+```php
+// Keep text content of span and p tags
+$result = $cleaner
+    ->onlyText('span', 'p')
+    ->clean($html);
+
+// Keep text content of all elements
+$result = $cleaner
+    ->onlyText(null)
+    ->clean($html);
+```
+
+### drop()
+
+Remove entire elements matching the given tag names.
+
+```php
+// Remove script, style, and meta tags
+$result = $cleaner
+    ->drop('script', 'style', 'meta')
+    ->clean($html);
+```
+
+### unwrap()
+
+Unwrap elements (remove the tag but keep its children) matching the given tag names.
+
+```php
+// Remove html and body tags, keeping their content
+$result = $cleaner
+    ->unwrap('html', 'body')
+    ->clean($html);
+```
+
+### wrap()
+
+Wrap elements matching the given tag names with a new tag.
+
+```php
+// Wrap all span elements with a div
+$result = $cleaner
+    ->wrap(['span'], 'div')
+    ->clean($html);
+```
+
+### allowStyles()
+
+Allow only specific inline styles on elements.
+
+```php
+// Allow only background-color and color styles
+$result = $cleaner
+    ->allowStyles('background-color', 'color')
+    ->clean($html);
+```
+
+### stripStyles()
+
+Strip specific inline styles from all elements.
+
+```php
+// Remove background and margin styles
+$result = $cleaner
+    ->stripStyles('background', 'margin')
+    ->clean($html);
+```
+
+### stripAttributes()
+
+Remove specified attributes from all elements.
+
+```php
+// Remove class, id, and onclick attributes
+$result = $cleaner
+    ->stripAttributes('class', 'id', 'onclick')
+    ->clean($html);
+```
+
+### changeAttr()
+
+Change attribute values for specific tags.
+
+```php
+// Change href attribute of all a tags to "#"
+$result = $cleaner
+    ->changeAttr(['a'], 'href', '#')
+    ->clean($html);
+```
+
+### replaceTag()
+
+Replace one tag with another, copying all attributes and styles.
+
+```php
+// Replace span tags with div tags
+$result = $cleaner
+    ->replaceTag(['span'], 'div')
+    ->clean($html);
+```
+
+### normalizeWhitespace()
+
+Normalize whitespace within text nodes (collapse multiple spaces, trim).
 
 ```php
 $result = $cleaner
@@ -87,34 +181,95 @@ $result = $cleaner
     ->clean($html);
 ```
 
-## Примеры использования
+### outputFragment()
 
-### Очистка HTML-документа
+Set output mode to return only an HTML fragment (no <html>, <body> etc.).
 
 ```php
-$html = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;}</style></head><body><p>Текст <b>примера</b></p></body></html>';
+$result = $cleaner
+    ->outputFragment()
+    ->clean($html);
+```
+
+### outputDocument()
+
+Set output mode to return a full HTML document.
+
+```php
+$result = $cleaner
+    ->outputDocument()
+    ->clean($html);
+```
+
+### clean()
+
+Clean the provided HTML string according to the configured rules.
+
+```php
+$result = $cleaner->clean($html);
+```
+
+## Advanced Examples
+
+### HTML Document Transformation
+
+```php
+$html = '<!DOCTYPE html><html dir="ltr"><head><meta charset="utf-8"><style>body{margin:0;}</style></head><body><p>Text <b>example</b></p></body></html>';
 
 $result = $cleaner
-    ->drop(['style', 'meta', 'head'])
+    ->unwrap('html', 'body')
+    ->drop('style', 'meta', 'head')
     ->normalizeWhitespace()
     ->outputFragment()
     ->clean($html);
 
-// Результат: <p>Текст <b>примера</b></p>
+// Result: <p>Text <b>example</b></p>
 ```
 
-### Преобразование форматирования
+### Style-Based Transformation
 
 ```php
-$html = '<span class="bold" style="color:red">Текст</span>';
+$html = '<span style="font-weight:bold">Hello</span><p>World</p>';
 
 $result = $cleaner
-    ->replace(
-        SelectorFacade::tag('span'),
-        Replace::tag('b')->copyClassList()
+    ->transform(
+        SelectorFacade::style('font-weight', 'bold'),
+        Replace::tag('b'),
+        10
     )
-    ->stripAttributes('style')
+    ->stripStyles('font-weight')
     ->clean($html);
 
-// Результат: <b class="bold">Текст</b>
+// Result: <b>Hello</b><p>World</p>
+```
+
+### Conditional Transformation with Closures
+
+```php
+$html = '<span style="font-weight:bold">Hello</span><p>World</p>';
+
+$result = $cleaner
+    ->transform(
+        SelectorFacade::style('font-weight', 'bold'),
+        function (DomNode $node) {
+            $doc = $node->ownerDocument;
+            $parent = $node->parentNode;
+            if (!$doc || !$parent) {
+                return false;
+            }
+
+            $newNode = $doc->createElement('b');
+            $newNode->setAttribute('class', 'changed');
+            while ($node->firstChild) {
+                $newNode->appendChild($node->firstChild);
+            }
+
+            $parent->replaceChild($newNode, $node);
+
+            return true;
+        }
+    )
+    ->clean($html);
+
+// Result: <b class="changed">Hello</b><p>World</p>
 ```

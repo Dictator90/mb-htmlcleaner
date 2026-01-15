@@ -1,7 +1,8 @@
 <?php
 namespace MB\Support\HtmlCleaner;
 
-use MB\Support\{HtmlCleaner\Contracts\EngineInterface,
+use MB\Support\{
+    HtmlCleaner\Contracts\EngineInterface,
     HtmlCleaner\Contracts\SelectorInterface,
     HtmlCleaner\Contracts\OutputMode,
     HtmlCleaner\Contracts\TransformerInterface,
@@ -18,7 +19,8 @@ use MB\Support\{HtmlCleaner\Contracts\EngineInterface,
     HtmlCleaner\Transformer\StripAttributes,
     HtmlCleaner\Transformer\StripStyles,
     HtmlCleaner\Transformer\Unwrap,
-    HtmlCleaner\Transformer\Wrap};
+    HtmlCleaner\Transformer\Wrap
+};
 
 /**
  * Class HtmlCleaner
