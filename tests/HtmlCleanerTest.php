@@ -311,7 +311,7 @@ final class HtmlCleanerTest extends TestCase
 
     public function testStripEmptyTag(): void
     {
-        $html = file_get_contents(__DIR__ . '/test_files/doc.html');
+        $html = file_get_contents(__DIR__ . '/test_files/doc_html');
         $result =
             HtmlCleaner::make()
                 ->stripComments()
@@ -322,14 +322,14 @@ final class HtmlCleanerTest extends TestCase
         ;
 
         $this->assertSame(
-            file_get_contents(__DIR__ . '/test_files/doc-result.html'),
+            file_get_contents(__DIR__ . '/test_files/doc-result_html'),
             trim($result)
         );
     }
 
     public function testLargeDoc(): void
     {
-        $html = file_get_contents(__DIR__ . '/test_files/large_doc.html');
+        $html = file_get_contents(__DIR__ . '/test_files/large_doc_html');
         $result =
             HtmlCleaner::make()
                 ->stripComments()
@@ -343,7 +343,7 @@ final class HtmlCleanerTest extends TestCase
         ;
 
         $this->assertSame(
-            file_get_contents(__DIR__ . '/test_files/large_doc-result.html'),
+            file_get_contents(__DIR__ . '/test_files/large_doc-result_html'),
             trim($result)
         );
     }
