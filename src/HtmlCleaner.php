@@ -1,8 +1,7 @@
 <?php
 namespace MB\Support\HtmlCleaner;
 
-use MB\Support\{
-    HtmlCleaner\Contracts\EngineInterface,
+use MB\Support\{HtmlCleaner\Contracts\EngineInterface,
     HtmlCleaner\Contracts\SelectorInterface,
     HtmlCleaner\Contracts\OutputMode,
     HtmlCleaner\Contracts\TransformerInterface,
@@ -11,16 +10,17 @@ use MB\Support\{
     HtmlCleaner\Selector\AndSelector,
     HtmlCleaner\Selector\OrSelector,
     HtmlCleaner\Selector\SelectorFacade,
+    HtmlCleaner\Selector\TextSelector,
     HtmlCleaner\Transformer\AllowStyles,
     HtmlCleaner\Transformer\ChangeAttribute,
     HtmlCleaner\Transformer\NormalizeWhitespace,
     HtmlCleaner\Transformer\OnlyText,
+    HtmlCleaner\Transformer\Remove,
     HtmlCleaner\Transformer\Replace,
     HtmlCleaner\Transformer\StripAttributes,
     HtmlCleaner\Transformer\StripStyles,
     HtmlCleaner\Transformer\Unwrap,
-    HtmlCleaner\Transformer\Wrap
-};
+    HtmlCleaner\Transformer\Wrap};
 
 /**
  * Class HtmlCleaner
@@ -71,14 +71,14 @@ final class HtmlCleaner
      * @param int $priority Rule priority.
      * @return $this
      */
-    public function transform(array|SelectorInterface $selectors, TransformerInterface|\Closure $replace, $priority = 0): self
+    public function transform(string|array|SelectorInterface $selectors, TransformerInterface|\Closure $replace, $priority = 0): self
     {
         if (!is_array($selectors)) {
             $selectors = [$selectors];
         }
 
         foreach ((array)$selectors as $selector) {
-            $this->engine->rule(Rule::when($selector)->transform($replace, $priority));
+            $this->engine->rule(Rule::when($this->normalizeSelector($selector))->transform($replace, $priority));
         }
 
         return $this;
@@ -89,16 +89,18 @@ final class HtmlCleaner
      */
     public function transformAnd(array $selectors, TransformerInterface|\Closure $replace, $priority = 0): self
     {
+        $selectors = array_map(fn($selector) => $this->normalizeSelector($selector), $selectors);
         $this->engine->rule(Rule::when(AndSelector::make(...$selectors))->transform($replace, $priority));
         return $this;
     }
 
     /**
-     * @param SelectorInterface[] $selectors
+     * @param SelectorInterface[]|string[] $selectors
      */
     public function transformOr(array $selectors, TransformerInterface|\Closure $replace, $priority = 0): self
     {
-        $this->engine->rule(Rule::when(OrSelector::make(...$selectors))->transform($replace, $priority));
+        $selectors = array_map(fn($selector) => $this->normalizeSelector($selector), $selectors);
+        $this->engine->rule(Rule::when(SelectorFacade::or(...$selectors))->transform($replace, $priority));
         return $this;
     }
 
@@ -113,8 +115,7 @@ final class HtmlCleaner
         if ($tags[0] === null) {
             $this->transform(SelectorFacade::any(), new OnlyText(), 999);
         } else {
-            $selectors = array_map(fn($tag) => SelectorFacade::tag($tag), $tags);
-            $this->transformOr($selectors, new OnlyText(), 999);
+            $this->transformOr($tags, new OnlyText(), 999);
         }
 
         return $this;
@@ -128,8 +129,7 @@ final class HtmlCleaner
      */
     public function drop(...$tags): self
     {
-        $selectors = array_map(fn($tag) => SelectorFacade::tag($tag), $tags);
-        $this->transformOr($selectors, new Replace(null), 100);
+        $this->transformOr($tags, new Replace(null), 100);
 
         return $this;
     }
@@ -142,16 +142,13 @@ final class HtmlCleaner
      */
     public function unwrap(...$tags): self
     {
-        $selectors = array_map(fn($tag) => SelectorFacade::tag($tag), $tags);
-        $this->transformOr($selectors, new Unwrap(), -100);
-
+        $this->transformOr($tags, new Unwrap(), -100);
         return $this;
     }
 
     public function wrap(array $tags, string $newTag): self
     {
-        $selectors = array_map(fn($tag) => SelectorFacade::tag($tag), $tags);
-        $this->transformOr($selectors, new Wrap($newTag), 90);
+        $this->transformOr($tags, new Wrap($newTag), 90);
 
         return $this;
     }
@@ -192,6 +189,23 @@ final class HtmlCleaner
         return $this;
     }
 
+    public function stripEmptyTag(...$tags): self
+    {
+        if ($tags[0] === null) {
+            $this->transform(
+                SelectorFacade::any(
+                    fn(\DOMNode $node) => $node instanceof \DOMElement && !trim($node->nodeValue)
+                ),
+                new Remove(),
+                90
+            );
+        } else {
+            $selectors = array_map(fn($tag) => SelectorFacade::emptyTag($tag), $tags);
+            $this->transformOr($selectors, new Remove(), 90);
+        }
+        return $this;
+    }
+
     /**
      * @param string[] $tags
      * @param string $attr
@@ -200,8 +214,7 @@ final class HtmlCleaner
      */
     public function changeAttr(array $tags, string $attr, string|int $value): self
     {
-        $selectors = array_map(fn($tag) => SelectorFacade::tag($tag), $tags);
-        $this->transform($selectors, new ChangeAttribute($attr, $value));
+        $this->transform($tags, new ChangeAttribute($attr, $value));
         return $this;
     }
 
@@ -212,9 +225,8 @@ final class HtmlCleaner
      */
     public function replaceTag(array $tags, string $tag): self
     {
-        $selectors = array_map(fn($tag) => SelectorFacade::tag($tag), $tags);
         $replace = (new Replace($tag))->copyStyles()->copyClassList()->copyAttrs();
-        $this->transformOr($selectors, $replace, 100);
+        $this->transformOr($tags, $replace, 100);
         return $this;
     }
 
@@ -225,7 +237,13 @@ final class HtmlCleaner
      */
     public function normalizeWhitespace(): self
     {
-        $this->transform(SelectorFacade::any(), new NormalizeWhitespace());
+        $this->transform(SelectorFacade::any(), new NormalizeWhitespace(), 100);
+        return $this;
+    }
+
+    public function stripComments()
+    {
+        $this->transform(SelectorFacade::comment(), new Remove());
         return $this;
     }
 
@@ -260,5 +278,12 @@ final class HtmlCleaner
     public function clean(string $html): string
     {
         return $this->engine->clean($html);
+    }
+
+    private function normalizeSelector(string|SelectorInterface $selector): SelectorInterface
+    {
+        return is_string($selector)
+            ? SelectorFacade::query($selector)
+            : $selector;
     }
 }

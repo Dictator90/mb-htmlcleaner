@@ -7,16 +7,14 @@ use MB\Support\HtmlCleaner\Contracts\SelectorInterface;
 
 class AttributeSelector implements SelectorInterface
 {
-    public const OP_EXISTS = 'exists';
     public const OP_EQUALS = '=';
     public const OP_NOT_EQ = '!=';
-    public const OP_CONTAINS = '~';
+    public const OP_CONTAINS = '*=';
 
     public function __construct(
         private string $attribute,
-        private string $operator = self::OP_EXISTS,
+        private ?string $operator = null,
         private ?string $value = null,
-
     ) {}
 
     public function matches(DOMNode $node): bool
@@ -29,7 +27,7 @@ class AttributeSelector implements SelectorInterface
             return false;
         }
 
-        if ($this->operator === self::OP_EXISTS) {
+        if (!$this->operator) {
             return true;
         }
 
@@ -39,6 +37,8 @@ class AttributeSelector implements SelectorInterface
             self::OP_EQUALS => $attrValue === $this->value,
             self::OP_NOT_EQ => $attrValue !== $this->value,
             self::OP_CONTAINS => str_contains($attrValue, $this->value),
+            '^=' => str_starts_with($attrValue, $this->value),
+            '$=' => str_ends_with($attrValue, $this->value),
             default => false
         };
     }

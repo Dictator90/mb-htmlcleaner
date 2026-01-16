@@ -12,10 +12,17 @@ use MB\Support\HtmlCleaner\Contracts\SelectorInterface;
  *
  * @package MB\Support\HtmlCleaner
  */
-final class AnySelector implements SelectorInterface
+class AnySelector implements SelectorInterface
 {
+    public function __construct(protected \Closure|null $callback = null)
+    {
+        if (is_null($callback)) {
+            $this->callback = fn() => true;
+        }
+    }
+
     public function matches(DOMNode $node): bool
     {
-        return true;
+        return ($this->callback)($node);
     }
 }

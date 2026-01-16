@@ -101,7 +101,7 @@ Unwrap elements (remove the tag but keep its children) matching the given tag na
 ```php
 // Remove html and body tags, keeping their content
 $result = $cleaner
-    ->unwrap('html', 'body')
+    ->unwrap('span', 'font')
     ->clean($html);
 ```
 
@@ -217,7 +217,6 @@ $result = $cleaner->clean($html);
 $html = '<!DOCTYPE html><html dir="ltr"><head><meta charset="utf-8"><style>body{margin:0;}</style></head><body><p>Text <b>example</b></p></body></html>';
 
 $result = $cleaner
-    ->unwrap('html', 'body')
     ->drop('style', 'meta', 'head')
     ->normalizeWhitespace()
     ->outputFragment()

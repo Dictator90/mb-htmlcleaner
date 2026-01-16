@@ -22,9 +22,7 @@ final class ChangeAttribute implements TransformerInterface
             return true;
         }
 
-        if ($node->hasAttribute($this->attribute)) {
-            $node->setAttribute($this->attribute, $this->value);
-        }
+        $node->setAttribute($this->attribute, $this->value);
 
         return true;
     }

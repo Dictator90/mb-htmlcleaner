@@ -1,11 +1,7 @@
 <?php
 
 use MB\Support\HtmlCleaner\HtmlCleaner;
-use MB\Support\HtmlCleaner\Selector\AndSelector;
-use MB\Support\HtmlCleaner\Selector\OrSelector;
 use MB\Support\HtmlCleaner\Selector\SelectorFacade;
-use MB\Support\HtmlCleaner\Selector\StyleSelector;
-use MB\Support\HtmlCleaner\Transformer\ChangeAttribute;
 use MB\Support\HtmlCleaner\Transformer\Replace;
 use PHPUnit\Framework\TestCase;
 
@@ -26,7 +22,7 @@ final class HtmlCleanerTest extends TestCase
 
     public function testUnwrap(): void
     {
-        $html = '<span class="bold" style="color:red">Hello</span><p>World</p>';
+        $html = '<span class="bold" style="color:red">Hello</span><p><span>World</span></p>';
 
         $result =
             HtmlCleaner::make()
@@ -34,7 +30,7 @@ final class HtmlCleanerTest extends TestCase
                 ->clean($html)
         ;
 
-        $this->assertSame('<span class="bold" style="color:red">Hello</span>World', trim($result));
+        $this->assertSame('<span class="bold" style="color:red">Hello</span><span>World</span>', trim($result));
     }
 
     public function testWrap(): void
@@ -53,8 +49,6 @@ final class HtmlCleanerTest extends TestCase
     public function testNormalizeWhitespace(): void
     {
         $html = '<p>Hello     world</p>';
-
-        $cleaner = new HtmlCleaner();
 
         $result =
             HtmlCleaner::make()
@@ -142,11 +136,11 @@ final class HtmlCleanerTest extends TestCase
             HtmlCleaner::make()
                 ->transformOr(
                     [
-                        AndSelector::make(
+                        SelectorFacade::and(
                             SelectorFacade::tag('span'),
                             SelectorFacade::style('font-size', '10pt')
                         ),
-                        AndSelector::make(
+                        SelectorFacade::and(
                             SelectorFacade::tag('p'),
                             SelectorFacade::style('color', '#333333')
                         )
@@ -158,6 +152,66 @@ final class HtmlCleanerTest extends TestCase
         ;
 
         $this->assertSame('<p><div class="replaced">Цвет</div></p><div class="replaced"></div>', trim($result));
+    }
+
+    public function testChildSelector(): void
+    {
+        $html = '<span class="bold" style="color:red">Hello</span><p><span>World</span></p>';
+
+        $result =
+            HtmlCleaner::make()
+                ->changeAttr(['p > span'], 'class', 'replaced')
+                ->clean($html)
+        ;
+
+        $this->assertSame('<span class="bold" style="color:red">Hello</span><p><span class="replaced">World</span></p>', trim($result));
+    }
+
+    public function testHasSelector(): void
+    {
+        $html = '<div class="bold" style="color:red"><span class="child">Hello</span></div><p><span>World</span></p>';
+
+        $result =
+            HtmlCleaner::make()
+                ->unwrap('div.bold:has(.child)')
+                ->clean($html)
+        ;
+
+        $this->assertSame('<span class="child">Hello</span><p><span>World</span></p>', trim($result));
+    }
+
+    public function testHasTextSelector(): void
+    {
+        $html = '<div><span>Hello</span></div><p><span>World</span></p>';
+
+        $result =
+            HtmlCleaner::make()
+                ->changeAttr(['span:has-text("Hello")'], 'class', 'hello')
+                ->clean($html)
+        ;
+
+        $this->assertSame(
+            '<div><span class="hello">Hello</span></div><p><span>World</span></p>',
+            trim($result)
+        );
+    }
+
+    public function testSmartSelector(): void
+    {
+        $html = '<div class="bold" style="color:red" data-id="5"><span>Hello</span></div><p><span>World</span></p><noindex>Hello</noindex>';
+
+        $result =
+            HtmlCleaner::make()
+                ->changeAttr(['div[data-id].bold > span'], 'class', 'found')
+                ->unwrap('p > span')
+                ->onlyText('noindex')
+                ->clean($html)
+        ;
+
+        $this->assertSame(
+            '<div class="bold" style="color:red" data-id="5"><span class="found">Hello</span></div><p>World</p>Hello',
+            trim($result)
+        );
     }
 
     public function testDocHtmlFragmentTransform(): void
@@ -176,6 +230,25 @@ final class HtmlCleanerTest extends TestCase
         $this->assertSame('<p><span style="background-color:#ffffff">Цвет</span></p><p style="background-color:#ffffff"></p>', trim($result));
     }
 
+    public function testDocHtmlQuerySelect(): void
+    {
+        $html = '<!DOCTYPE html><html dir="ltr"><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=Edge" /><meta name="format-detection" content="telephone=no" /><style type="text/css">body{margin:0;padding:8px;}p{line-height:1.15;margin:0;white-space:pre-wrap;}ol,ul{margin-top:0;margin-bottom:0;}img{border:none;}li>p{display:inline;}</style></head><body class="bodyClass"><p><span style="background-color: #ffffff;color: #888888;font-family: Open Sans;font-size: 10pt;font-style: normal;font-weight: normal;line-height: 1.38;">Цвет</span></p><p style="background-color: #ffffff;color: #333333;font-family: Open Sans;font-size: 10pt;font-style: normal;font-weight: normal;line-height: 1.38;"></body></html>';
+
+        $result =
+            HtmlCleaner::make()
+                ->drop('meta[http-equiv="Content-Type"]', 'style')
+                ->stripStyles('font-family', 'color', 'font-style', 'font-size', 'font-weight', 'line-height')
+                ->normalizeWhitespace()
+                ->outputDocument()
+                ->clean($html)
+        ;
+
+        $this->assertSame(
+            '<!DOCTYPE html><html dir="ltr"><head><meta http-equiv="X-UA-Compatible" content="IE=Edge"><meta name="format-detection" content="telephone=no"></head><body class="bodyClass"><p><span style="background-color:#ffffff">Цвет</span></p><p style="background-color:#ffffff"></p></body></html>',
+            trim($result)
+        );
+    }
+
     public function testDocHtmlDocumentTransform(): void
     {
         $html = '<!DOCTYPE html><html dir="ltr"><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=Edge" /><meta name="format-detection" content="telephone=no" /><style type="text/css">body{margin:0;padding:8px;}p{line-height:1.15;margin:0;white-space:pre-wrap;}ol,ul{margin-top:0;margin-bottom:0;}img{border:none;}li>p{display:inline;}</style></head><body class="bodyClass"><p><span style="background-color: #ffffff;color: #888888;font-family: Open Sans;font-size: 10pt;font-style: normal;font-weight: normal;line-height: 1.38;">Цвет</span></p><p style="background-color: #ffffff;color: #333333;font-family: Open Sans;font-size: 10pt;font-style: normal;font-weight: normal;line-height: 1.38;"></body></html>';
@@ -191,6 +264,45 @@ final class HtmlCleanerTest extends TestCase
 
         $this->assertSame(
             '<!DOCTYPE html><html dir="ltr"><body class="bodyClass"><p><span style="background-color:#ffffff">Цвет</span></p><p style="background-color:#ffffff"></p></body></html>',
+            trim($result)
+        );
+    }
+
+    public function testStripEmptyTag(): void
+    {
+        $html = file_get_contents(__DIR__ . '/test_files/doc.html');
+        $result =
+            HtmlCleaner::make()
+                ->stripComments()
+                ->normalizeWhitespace()
+                ->stripEmptyTag('p')
+                ->outputDocument()
+                ->clean($html)
+        ;
+
+        $this->assertSame(
+            file_get_contents(__DIR__ . '/test_files/doc-result.html'),
+            trim($result)
+        );
+    }
+
+    public function testLargeDoc(): void
+    {
+        $html = file_get_contents(__DIR__ . '/test_files/large_doc.html');
+        $result =
+            HtmlCleaner::make()
+                ->stripComments()
+                ->normalizeWhitespace()
+                ->stripEmptyTag('p')
+                ->changeAttr(['a[href^=/"]'], 'target', '_blank')
+                ->drop('iframe', 'script')
+                ->wrap(['a[rel="nofollow"]'], 'noindex')
+                ->outputDocument()
+                ->clean($html)
+        ;
+
+        $this->assertSame(
+            file_get_contents(__DIR__ . '/test_files/large_doc-result.html'),
             trim($result)
         );
     }

@@ -2,12 +2,18 @@
 namespace MB\Support\HtmlCleaner\Selector;
 
 use MB\Support\HtmlCleaner\Contracts\SelectorInterface;
+use MB\Support\HtmlCleaner\Selector\Helper\StringParser;
 
 final class SelectorFacade
 {
-    public static function any(): SelectorInterface
+    public static function any(\Closure|null $callback = null): SelectorInterface
     {
-        return new AnySelector();
+        return new AnySelector($callback);
+    }
+
+    public static function comment(): SelectorInterface
+    {
+        return new CommentSelector();
     }
 
     public static function element(): SelectorInterface
@@ -25,7 +31,17 @@ final class SelectorFacade
         return new TagSelector($tag);
     }
 
-    public static function attr(string $name, ?string $value = null, string $operator = AttributeSelector::OP_EXISTS): SelectorInterface
+    public static function query(string $selector): SelectorInterface
+    {
+        return StringParser::queryParse($selector);
+    }
+
+    public static function emptyTag(string $tag): SelectorInterface
+    {
+        return new EmptyTagSelector($tag);
+    }
+
+    public static function attr(string $name, ?string $value = null, string $operator = null): SelectorInterface
     {
         return new AttributeSelector($name, $value, $operator);
     }
