@@ -21,44 +21,38 @@ final class Replace implements TransformerInterface
 
     public function addClass(string $class): self
     {
-        $c = clone $this;
-        $c->attrs['class'][] = $class;
-        return $c;
+        $this->attrs['class'][] = $class;
+        return $this;
     }
 
     public function addStyle(string $style, string $value): self
     {
-        $c = clone $this;
-        $c->attrs['style'][$style] = $value;
-        return $c;
+        $this->attrs['style'][$style] = $value;
+        return $this;
     }
 
     public function addAttr(string $attr, string $value): self
     {
-        $c = clone $this;
-        $c->attrs[$attr] = $value;
-        return $c;
+        $this->attrs[$attr] = $value;
+        return $this;
     }
 
     public function copyStyles(): self
     {
-        $c = clone $this;
-        $c->copyStyles = true;
-        return $c;
+        $this->copyStyles = true;
+        return $this;
     }
 
     public function copyClassList(): self
     {
-        $c = clone $this;
-        $c->copyClassList = true;
-        return $c;
+        $this->copyClassList = true;
+        return $this;
     }
 
     public function copyAttrs(): self
     {
-        $c = clone $this;
-        $c->copyAttrs = true;
-        return $c;
+        $this->copyAttrs = true;
+        return $this;
     }
 
     public function apply(DOMNode $node): bool

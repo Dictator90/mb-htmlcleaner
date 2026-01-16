@@ -21,18 +21,86 @@ $result = $cleaner->clean('<p><b>Привет</b> <i>мир</i>!</p>');
 
 ## Методы HtmlCleaner
 
+### stripEmptyTag()
+
+Удаляет пустые элементы (без текстового содержимого или только с пробелами), соответствующие указанным именам тегов.
+
+```php
+// Удалить пустые теги p
+$result = $cleaner
+    ->stripEmptyTag('p')
+    ->clean($html);
+
+// Удалить все пустые элементы
+$result = $cleaner
+    ->stripEmptyTag(null)
+    ->clean($html);
+```
+
+## Методы HtmlCleaner
+
 ### transform()
 
-Преобразует элементы, выбранные с помощью указанных селекторов, используя TransformerInterface или замыкание.
+Преобразует элементы, выбранные с помощью указанных селекторов, используя TransformerInterface или замыкание. Поддерживает CSS-подобные селекторы для продвинутого выбора элементов.
 
 ```php
 use MB\Support\HtmlCleaner\Selector\SelectorFacade;
 use MB\Support\HtmlCleaner\Transformer\Replace;
 
+// Выбор по тегу
 $result = $cleaner
     ->transform(
         SelectorFacade::tag('span'),
         Replace::tag('b')
+    )
+    ->clean($html);
+
+// CSS-подобный синтаксис селекторов
+$result = $cleaner
+    ->transform(
+        'div.container > p',
+        Replace::tag('div')
+    )
+    ->clean($html);
+
+// Несколько селекторов через запятую (ИЛИ)
+$result = $cleaner
+    ->transform(
+        'b, strong, span.bold',
+        Replace::tag('b')
+    )
+    ->clean($html);
+
+// Селекторы атрибутов
+$result = $cleaner
+    ->transform(
+        'a[href^="/"]',
+        function ($node) {
+            $node->setAttribute('target', '_blank');
+        }
+    )
+    ->clean($html);
+
+// Псевдоклассы
+$result = $cleaner
+    ->transform(
+        'div:has(p)',
+        Replace::tag('section')
+    )
+    ->clean($html);
+
+$result = $cleaner
+    ->transform(
+        'span:has-text("Hello")',
+        Replace::tag('b')
+    )
+    ->clean($html);
+
+// Комбинации классов и атрибутов
+$result = $cleaner
+    ->transform(
+        'div.highlight[data-type="article"]',
+        Replace::tag('article')
     )
     ->clean($html);
 ```

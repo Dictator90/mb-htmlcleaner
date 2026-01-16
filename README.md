@@ -23,18 +23,86 @@ $result = $cleaner->clean('<p><b>Hello</b> <i>world</i>!</p>');
 
 ## HtmlCleaner Methods
 
+### stripEmptyTag()
+
+Remove empty elements (with no text content or only whitespace) matching the given tag names.
+
+```php
+// Remove empty p tags
+$result = $cleaner
+    ->stripEmptyTag('p')
+    ->clean($html);
+
+// Remove all empty elements
+$result = $cleaner
+    ->stripEmptyTag(null)
+    ->clean($html);
+```
+
+## HtmlCleaner Methods
+
 ### transform()
 
-Transform elements selected by the provided selectors using a TransformerInterface or closure.
+Transform elements selected by the provided selectors using a TransformerInterface or closure. Supports CSS-like selectors for advanced element selection.
 
 ```php
 use MB\Support\HtmlCleaner\Selector\SelectorFacade;
 use MB\Support\HtmlCleaner\Transformer\Replace;
 
+// Basic tag selection
 $result = $cleaner
     ->transform(
         SelectorFacade::tag('span'),
         Replace::tag('b')
+    )
+    ->clean($html);
+
+// CSS-like selector syntax
+$result = $cleaner
+    ->transform(
+        'div.container > p',
+        Replace::tag('div')
+    )
+    ->clean($html);
+
+// Multiple selectors with comma (OR)
+$result = $cleaner
+    ->transform(
+        'strong, span.bold',
+        Replace::tag('b')
+    )
+    ->clean($html);
+
+// Attribute selectors
+$result = $cleaner
+    ->transform(
+        'a[href^="/"]',
+        function ($node) {
+            $node->setAttribute('target', '_blank');
+        }
+    )
+    ->clean($html);
+
+// Pseudo-class selectors
+$result = $cleaner
+    ->transform(
+        'div:has(p)',
+        Replace::tag('section')
+    )
+    ->clean($html);
+
+$result = $cleaner
+    ->transform(
+        'span:has-text("Hello")',
+        Replace::tag('b')
+    )
+    ->clean($html);
+
+// Class and attribute combinations
+$result = $cleaner
+    ->transform(
+        'div.highlight[data-type="article"]',
+        Replace::tag('article')
     )
     ->clean($html);
 ```

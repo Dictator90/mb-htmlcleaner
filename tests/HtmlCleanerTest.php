@@ -3,6 +3,7 @@
 use MB\Support\HtmlCleaner\HtmlCleaner;
 use MB\Support\HtmlCleaner\Selector\SelectorFacade;
 use MB\Support\HtmlCleaner\Transformer\Replace;
+use MB\Support\HtmlCleaner\Transformer\TransformerFacade;
 use PHPUnit\Framework\TestCase;
 
 final class HtmlCleanerTest extends TestCase
@@ -210,6 +211,46 @@ final class HtmlCleanerTest extends TestCase
 
         $this->assertSame(
             '<div class="bold" style="color:red" data-id="5"><span class="found">Hello</span></div><p>World</p>Hello',
+            trim($result)
+        );
+    }
+
+    public function testOrSelector(): void
+    {
+        // 'strong, span.bold',
+        $html = '<strong>Hello</strong><span class="bold">World</span>';
+
+        $result =
+            HtmlCleaner::make()
+                ->replaceTag(['strong', 'span.bold'], 'b', false)
+                ->clean($html)
+        ;
+
+        $this->assertSame(
+            '<b>Hello</b><b>World</b>',
+            trim($result)
+        );
+    }
+
+    public function testBatchTransformer(): void
+    {
+        $html = '<div class="bold" style="color:red" data-id="5"><span>Hello</span></div>';
+
+        $result =
+            HtmlCleaner::make()
+                ->transform(
+                    'div.bold',
+                    TransformerFacade::batch(
+                        TransformerFacade::changeAttr('data-id', '10'),
+                        TransformerFacade::wrap('article'),
+                        TransformerFacade::dropAttrs('style')
+                    )
+                )
+                ->clean($html)
+        ;
+
+        $this->assertSame(
+            '<article><div class="bold" data-id="10"><span>Hello</span></div></article>',
             trim($result)
         );
     }

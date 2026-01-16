@@ -4,7 +4,7 @@ namespace MB\Support\HtmlCleaner\Transformer;
 use DOMNode;
 use MB\Support\HtmlCleaner\Contracts\TransformerInterface;
 
-final class StripStyles implements TransformerInterface
+class StripStyles implements TransformerInterface
 {
     public function __construct(
         private array $styles

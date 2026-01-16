@@ -71,14 +71,14 @@ final class HtmlCleaner
      * @param int $priority Rule priority.
      * @return $this
      */
-    public function transform(string|array|SelectorInterface $selectors, TransformerInterface|\Closure $replace, $priority = 0): self
+    public function transform(string|array|SelectorInterface $selectors, TransformerInterface|\Closure $transformer, $priority = 0): self
     {
         if (!is_array($selectors)) {
             $selectors = [$selectors];
         }
 
         foreach ((array)$selectors as $selector) {
-            $this->engine->rule(Rule::when($this->normalizeSelector($selector))->transform($replace, $priority));
+            $this->engine->rule(Rule::when($this->normalizeSelector($selector))->transform($transformer, $priority));
         }
 
         return $this;
@@ -221,11 +221,16 @@ final class HtmlCleaner
     /**
      * @param array<int, string> $tags
      * @param string $tag
+     * @param bool $copyAttrs
      * @return self
      */
-    public function replaceTag(array $tags, string $tag): self
+    public function replaceTag(array $tags, string $tag, $copyAttrs = true): self
     {
-        $replace = (new Replace($tag))->copyStyles()->copyClassList()->copyAttrs();
+        $replace = new Replace($tag);
+        if ($copyAttrs) {
+            $replace->copyStyles()->copyClassList()->copyAttrs();
+        }
+
         $this->transformOr($tags, $replace, 100);
         return $this;
     }
