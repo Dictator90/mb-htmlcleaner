@@ -1,4 +1,4 @@
-# MB HTML Cleaner
+# PHP HTML Cleaner
 
 [Русская документация](README.ru.md)
 
